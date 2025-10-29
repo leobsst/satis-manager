@@ -1,0 +1,20 @@
+{
+    "added_at": "Added at",
+    "authentication": "Authentication",
+    "back_to_home": "Back to home",
+    "cancelled_at": "Cancelled at",
+    "connection": "Connection",
+    "configuration": "Configuration",
+    "created_at": "Created at",
+    "exception": "Exception",
+    "failed_at": "Failed at",
+    "finished_at": "Finished at",
+    "grant_types": "Grant types",
+    "name": "Name",
+    "options": "Option|Options",
+    "provider": "Provider",
+    "redirection": "Redirection",
+    "revoked": "Revoked",
+    "updated_at": "Updated at",
+    "user": "User"
+}

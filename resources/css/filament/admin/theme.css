@@ -1,0 +1,8 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament';
+
+/* LOG MANAGER */
+@import '../../../../vendor/leobsst/filament-log-manager/resources/css/index.css';
+@source '../../../../vendor/leobsst/filament-log-manager/resources/views/**/*.blade.php';

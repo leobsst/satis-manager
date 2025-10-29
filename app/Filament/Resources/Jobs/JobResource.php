@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Filament\Resources\Jobs;
+
+use App\Filament\Resources\Jobs\Pages\ListJobs;
+use App\Filament\Resources\Jobs\Schemas\JobsForm;
+use App\Filament\Resources\Jobs\Tables\JobsTable;
+use App\Models\Job;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
+
+class JobResource extends Resource
+{
+    protected static ?string $model = Job::class;
+
+    protected static string | \UnitEnum | null $navigationGroup = 'Jobs';
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
+
+    protected static ?string $recordTitleAttribute = 'id';
+
+    protected static ?int $navigationSort = 90;
+
+    public static function form(Schema $schema): Schema
+    {
+        return JobsForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return JobsTable::configure($table);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListJobs::route('/'),
+        ];
+    }
+}
