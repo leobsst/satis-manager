@@ -21,19 +21,35 @@ class SatisController extends Controller
             abort(404);
         }
 
-        // Vérifier que le fichier existe et est un fichier JSON
+        // Vérifier que le fichier existe et est un fichier
         if (! file_exists($realPath) || ! is_file($realPath)) {
             abort(404);
         }
 
-        // Vérifier que c'est bien un fichier JSON
+        // Vérifier que c'est bien un fichier JSON ou TAR
         $extension = pathinfo($realPath, PATHINFO_EXTENSION);
-        if ($extension !== 'json') {
+        if (! in_array($extension, ['json', 'tar'])) {
             abort(404);
         }
 
+        // Vérifier le User-Agent pour tous les fichiers sauf packages.json
+        $fileName = basename($realPath);
+        if ($fileName !== 'packages.json') {
+            $userAgent = request()->userAgent();
+            if (! $userAgent || ! str_contains(strtolower($userAgent), 'composer')) {
+                abort(403, 'Access denied. Composer User-Agent required.');
+            }
+        }
+
+        // Déterminer le Content-Type en fonction de l'extension
+        $contentType = match ($extension) {
+            'json' => 'application/json',
+            'tar' => 'application/x-tar',
+            default => 'application/octet-stream',
+        };
+
         return new Response(file_get_contents($realPath), 200, [
-            'Content-Type' => 'application/json',
+            'Content-Type' => $contentType,
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ]);
     }

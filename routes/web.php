@@ -14,6 +14,6 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::get('/{path}', [App\Http\Controllers\SatisController::class, 'packages'])
-    ->where('path', '.*\.json$')
+    ->where('path', '.*\.(json|tar)$')
     ->middleware([AuthenticateOnceWithBasicAuth::class, 'role:user'])
     ->name('packages');

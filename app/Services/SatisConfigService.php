@@ -20,6 +20,13 @@ class SatisConfigService
             'homepage' => config('app.url'),
             'repositories' => [],
             'require' => [],
+            'archive' => [
+                'directory' => 'dist',
+                'format' => 'tar',
+                'skip-dev' => true,
+                'prefix-url' => config('app.url'),
+                'checksum' => true,
+            ],
             'output-dir' => 'storage/app/satis',
             'config' => [
                 'github-protocols' => ['https', 'ssh'],
