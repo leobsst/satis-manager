@@ -45,7 +45,6 @@ class SatisController extends Controller
         $contentType = match ($extension) {
             'json' => 'application/json',
             'tar' => 'application/x-tar',
-            default => 'application/octet-stream',
         };
 
         return new Response(file_get_contents($realPath), 200, [
