@@ -41,7 +41,7 @@ class RepositoriesTable
                         CodespaceProviderEnum::BITBUCKET => 'info',
                         CodespaceProviderEnum::CUSTOM => 'gray',
                     })
-                    ->url(fn (Repository $record): ?string => $record->getFullUrl(true), true)
+                    ->url(fn (Repository $record): string => $record->getFullUrl(true), true)
                     ->badge(),
                 TextColumn::make('created_at')
                     ->label(__('added_at'))

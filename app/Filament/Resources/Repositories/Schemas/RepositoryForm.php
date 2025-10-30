@@ -32,7 +32,7 @@ class RepositoryForm
                         ->hiddenLabel()
                         ->required()
                         ->regex('/^[a-zA-Z0-9\-]+$/')
-                        ->prefix(fn (Get $get): ?string => CodespaceProviderEnum::tryFrom($get('provider'))->prefix() ?? ':')
+                        ->prefix(fn (Get $get): string => CodespaceProviderEnum::tryFrom($get('provider'))->prefix() ?? ':')
                         ->validationAttribute(__('user'))
                         ->extraInputAttributes(['class' => 'py-2.5']),
                     TextInput::make('repository_name')
