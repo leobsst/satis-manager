@@ -5,12 +5,12 @@ namespace App\Jobs;
 use App\Models\Repository;
 use App\Services\PackageAuthenticationService;
 use App\Services\SatisConfigService;
-use File;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -70,5 +70,11 @@ class BuildPackages implements ShouldQueue
                 'repository_id' => $this->repository?->id,
                 'output' => $process->getOutput() ?: $process->getErrorOutput(),
             ]);
+
+        // Post-process packages.json to remove dist URLs if archive is disabled
+        // This allows HTTP basic auth to work without requiring GitHub tokens
+        if ($process->isSuccessful()) {
+            SatisConfigService::postProcessPackages();
+        }
     }
 }

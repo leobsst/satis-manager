@@ -44,10 +44,12 @@ class Repository extends Model
 
     /**
      * Get the full git URL for this repository
+     *
+     * @param  bool  $http  Whether to use HTTP(S) prefix instead of SSH
      */
-    public function getFullUrl(): string
+    public function getFullUrl(bool $http = false): string
     {
-        $prefix = $this->provider->prefix();
+        $prefix = $this->provider->prefix($http);
 
         if (! $prefix) {
             throw new \RuntimeException("Provider {$this->provider->value} does not have a configured prefix");

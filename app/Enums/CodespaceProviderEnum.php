@@ -29,15 +29,21 @@ enum CodespaceProviderEnum: string
         };
     }
 
-    public function prefix(): ?string
+    /**
+     * Get the git URL prefix for this provider
+     *
+     * @param  bool  $http  Whether to use HTTP(S) prefix instead of SSH
+     */
+    public function prefix(bool $http = false): ?string
     {
         $customDomain = config('services.custom.domain');
+        $customPrefix = $customDomain ? ($http ? "https://{$customDomain}/" : "git@{$customDomain}:") : null;
 
         return match ($this) {
-            self::GITHUB => 'git@github.com:',
-            self::GITLAB => 'git@gitlab.com:',
-            self::BITBUCKET => 'git@bitbucket.org:',
-            default => $customDomain ? "git@{$customDomain}:" : null
+            self::GITHUB => $http ? 'https://github.com/' : 'git@github.com:',
+            self::GITLAB => $http ? 'https://gitlab.com/' : 'git@gitlab.com:',
+            self::BITBUCKET => $http ? 'https://bitbucket.org/' : 'git@bitbucket.org:',
+            default => $customPrefix
         };
     }
 }

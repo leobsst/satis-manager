@@ -100,9 +100,13 @@ APP_NAME="Satis Manager"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.com
+APP_VENDOR=vendor
 
 # DEFAULT ADMIN ACCOUNT
 DEFAULT_ADMIN_EMAIL=
+
+# Satis configuration
+SATIS_ARCHIVE=true
 
 # Database
 DB_CONNECTION=mysql
@@ -179,6 +183,9 @@ Keep generated credentials.
 ### Accessing the Admin Panel
 
 Navigate to `https://your-domain.com/admin/login` and log in with your admin credentials.
+
+- email: `default_admin_email` or `admin@admin.net`
+- password: `password`
 
 ### Adding a Repository
 
@@ -303,6 +310,29 @@ composer config http-basic.your-domain.com your-username your-password
 ```
 
 Your username is your email.
+
+#### Important: Archive Configuration
+
+The `SATIS_ARCHIVE` environment variable controls how packages are distributed:
+
+- **`SATIS_ARCHIVE=true` (Recommended)**: Packages are archived as `.tar` files and served directly from your Satis server. Clients use HTTP basic authentication only.
+
+- **`SATIS_ARCHIVE=false`**: Packages are installed via `git clone` (source). The system automatically removes GitHub/GitLab download URLs from the package metadata. Clients must configure Git credentials:
+  ```bash
+  # For GitHub repositories
+  composer config github-oauth.github.com your-github-token
+
+  # For GitLab repositories
+  composer config gitlab-oauth.gitlab.com your-gitlab-token
+  ```
+
+**Recommendation**: Keep `SATIS_ARCHIVE=true` in your `.env` file for the best user experience with simple HTTP basic authentication.
+
+> **How to verify it's working**: When `SATIS_ARCHIVE=false`, check your logs after a build:
+> ```bash
+> tail storage/logs/satis-*.log | grep "Post-processing"
+> # Should show: "Post-processing complete - removed X dist URLs to force source installation"
+> ```
 
 Then install your private packages as usual:
 

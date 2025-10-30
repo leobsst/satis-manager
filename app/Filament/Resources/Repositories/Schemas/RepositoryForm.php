@@ -29,12 +29,16 @@ class RepositoryForm
                     ->options(CodespaceProviderEnum::asSelectableArray()),
                 FusedGroup::make([
                     TextInput::make('vendor')
-                        ->label(__('vendor'))
+                        ->hiddenLabel()
                         ->required()
-                        ->prefix(fn (Get $get): ?string => CodespaceProviderEnum::tryFrom($get('provider'))->prefix())
+                        ->regex('/^[a-zA-Z0-9\-]+$/')
+                        ->prefix(fn (Get $get): ?string => CodespaceProviderEnum::tryFrom($get('provider'))->prefix() ?? ':')
+                        ->validationAttribute(__('user'))
                         ->extraInputAttributes(['class' => 'py-2.5']),
                     TextInput::make('repository_name')
-                        ->label(__('repository_name'))
+                        ->hiddenLabel()
+                        ->validationAttribute(__('name'))
+                        ->regex('/^[a-zA-Z0-9\-]+$/')
                         ->prefix('/')
                         ->suffix('.git')
                         ->required()
