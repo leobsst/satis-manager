@@ -22,13 +22,6 @@ class OauthClientForm
                     ->copyable()
                     ->belowLabel('client_id')
                     ->disabled(),
-                TextInput::make(name: 'secret')
-                    ->label(label: __('api_credentials.view.secret'))
-                    ->belowLabel('client_secret')
-                    ->password()
-                    ->revealable()
-                    ->copyable()
-                    ->disabled(),
                 Select::make('grant_types')
                     ->label(__('grant_types'))
                     ->multiple()

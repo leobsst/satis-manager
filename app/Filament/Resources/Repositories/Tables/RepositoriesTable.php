@@ -2,18 +2,22 @@
 
 namespace App\Filament\Resources\Repositories\Tables;
 
-use App\Enums\CodespaceProviderEnum;
-use App\Jobs\BuildPackages;
 use App\Models\Repository;
-use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Support\Enums\TextSize;
-use Filament\Support\Enums\Width;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Table;
+use App\Jobs\BuildPackages;
+use Filament\Actions\Action;
+use Filament\Schemas\Schema;
+use Filament\Actions\EditAction;
+use Filament\Support\Enums\Width;
+use Filament\Actions\DeleteAction;
+use App\Enums\CodespaceProviderEnum;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Icons\Heroicon;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Columns\TextColumn;
+use Laravel\Passport\ClientRepository;
 
 class RepositoriesTable
 {
@@ -61,6 +65,37 @@ class RepositoriesTable
             ->recordActions([
                 EditAction::make()
                     ->modalWidth(Width::TwoExtraLarge),
+                Action::make('rebuild_repository')
+                    ->label(__('repositories.rebuild.action'))
+                    ->action(fn (Repository $record) => BuildPackages::dispatch(repository: $record))
+                    ->successNotificationTitle(__('repositories.rebuild.success_notification'))
+                    ->icon('icon-package')
+                    ->color('gray'),
+                Action::make('generate_client_credentials')
+                    ->label('Generate Client Credentials')
+                    ->modalHeading(__('authentication'))
+                    ->mountUsing(callback: function (Schema $schema, Repository $record) {
+                        $client = app(ClientRepository::class)
+                            ->createClientCredentialsGrantClient($record->url);
+
+                        $schema->fill(state: [
+                            'secret' => $client->plainSecret,
+                        ]);
+                    })
+                    ->schema([
+                        TextInput::make('secret')
+                            ->label(__('repositories.api_credentials.secret'))
+                            ->password()
+                            ->revealable()
+                            ->copyable()
+                            ->disabled(),
+                    ])
+                    ->successNotificationTitle(__('repositories.api_credentials.success_notification'))
+                    ->icon(Heroicon::Key)
+                    ->color('primary')
+                    ->modalSubmitActionLabel(null)
+                    ->modalWidth(Width::Large)
+                    ->modalCancelActionLabel(__('close')),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

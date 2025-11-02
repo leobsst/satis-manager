@@ -57,7 +57,6 @@ class OauthClientsTable
                             $schema->fill(state: [
                                 'id' => $record->id,
                                 'grant_types' => $record->grant_types,
-                                'secret' => $record->plainSecret,
                             ]);
                         })
                         ->modalWidth(width: Width::Large)
