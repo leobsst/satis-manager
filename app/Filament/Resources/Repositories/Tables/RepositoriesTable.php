@@ -2,21 +2,21 @@
 
 namespace App\Filament\Resources\Repositories\Tables;
 
-use App\Models\Repository;
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Table;
-use App\Jobs\BuildPackages;
-use Filament\Actions\Action;
-use Filament\Schemas\Schema;
-use Filament\Actions\EditAction;
-use Filament\Support\Enums\Width;
-use Filament\Actions\DeleteAction;
 use App\Enums\CodespaceProviderEnum;
-use Filament\Support\Enums\TextSize;
-use Filament\Support\Icons\Heroicon;
+use App\Jobs\BuildPackages;
+use App\Models\Repository;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 use Laravel\Passport\ClientRepository;
 
 class RepositoriesTable
