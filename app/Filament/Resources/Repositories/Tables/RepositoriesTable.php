@@ -89,7 +89,7 @@ class RepositoriesTable
                             $schema->fill(state: [
                                 'id' => $client->id,
                                 'secret' => $client->plainSecret,
-                                'grant_types' => $client->grant_types,
+                                'grant_types' => $client->grant_types, /** @phpstan-ignore-line */
                             ]);
                         })
                         ->schema(OauthClientForm::getComponents())
