@@ -13,7 +13,12 @@ return [
     ],
 
     'rebuild' => [
-        'action' => 'Reconstruire',
-        'success_notification' => 'La reconstruction du répertoire a été lancée avec succès.',
+        'action' => 'Actualiser',
+        'success_notification' => 'L\'actualisation du répertoire a été lancée avec succès.',
     ],
+
+    'api_credentials' => [
+        'title' => 'Identifiants API',
+    ],
+
 ];

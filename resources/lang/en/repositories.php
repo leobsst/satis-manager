@@ -13,7 +13,12 @@ return [
     ],
 
     'rebuild' => [
-        'action' => 'Rebuild',
-        'success_notification' => 'Repository rebuild has been successfully initiated.',
+        'action' => 'Refresh',
+        'success_notification' => 'Repository update has been successfully initiated.',
     ],
+
+    'api_credentials' => [
+        'title' => 'API Credentials',
+    ],
+
 ];

@@ -3,20 +3,22 @@
 namespace App\Filament\Resources\Repositories\Tables;
 
 use App\Enums\CodespaceProviderEnum;
+use App\Filament\Resources\OauthClients\Schemas\OauthClientForm;
 use App\Jobs\BuildPackages;
 use App\Models\Repository;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 
 class RepositoriesTable
@@ -63,40 +65,40 @@ class RepositoriesTable
                     ->disabled(fn () => $table->getRecords()->isEmpty()),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->modalWidth(Width::TwoExtraLarge),
-                Action::make('rebuild_repository')
-                    ->label(__('repositories.rebuild.action'))
-                    ->action(fn (Repository $record) => BuildPackages::dispatch(repository: $record))
-                    ->successNotificationTitle(__('repositories.rebuild.success_notification'))
-                    ->icon('icon-package')
-                    ->color('gray'),
-                Action::make('generate_client_credentials')
-                    ->label('Generate Client Credentials')
-                    ->modalHeading(__('authentication'))
-                    ->mountUsing(callback: function (Schema $schema, Repository $record) {
-                        $client = app(ClientRepository::class)
-                            ->createClientCredentialsGrantClient($record->url);
+                ActionGroup::make([
+                    EditAction::make()
+                        ->modalWidth(Width::TwoExtraLarge),
+                    Action::make('rebuild_repository')
+                        ->label(__('repositories.rebuild.action'))
+                        ->action(fn (Repository $record) => BuildPackages::dispatch(repository: $record))
+                        ->successNotificationTitle(__('repositories.rebuild.success_notification'))
+                        ->icon('icon-package'),
+                    Action::make('generate_client_credentials')
+                        ->label(__('repositories.api_credentials.title'))
+                        ->modalHeading(fn (Repository $record) => __('authentication') . ' - ' . $record->url)
+                        ->mountUsing(callback: function (Schema $schema, Repository $record) {
+                            $client = app(ClientRepository::class)
+                                ->createClientCredentialsGrantClient(sprintf(
+                                    '%s #%d',
+                                    $record->url,
+                                    Client::query()
+                                        ->whereLike('name', $record->url . ' #%')
+                                        ->count() + 1,
+                                ));
 
-                        $schema->fill(state: [
-                            'secret' => $client->plainSecret,
-                        ]);
-                    })
-                    ->schema([
-                        TextInput::make('secret')
-                            ->label(__('repositories.api_credentials.secret'))
-                            ->password()
-                            ->revealable()
-                            ->copyable()
-                            ->disabled(),
-                    ])
-                    ->successNotificationTitle(__('repositories.api_credentials.success_notification'))
-                    ->icon(Heroicon::Key)
-                    ->color('primary')
-                    ->modalSubmitActionLabel(null)
-                    ->modalWidth(Width::Large)
-                    ->modalCancelActionLabel(__('close')),
-                DeleteAction::make(),
+                            $schema->fill(state: [
+                                'id' => $client->id,
+                                'secret' => $client->plainSecret,
+                                'grant_types' => $client->grant_types,
+                            ]);
+                        })
+                        ->schema(OauthClientForm::getComponents())
+                        ->icon(Heroicon::Key)
+                        ->modalSubmitAction(false)
+                        ->modalWidth(Width::Large)
+                        ->modalCancelActionLabel(__('close')),
+                    DeleteAction::make(),
+                ])->button()->color('gray'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

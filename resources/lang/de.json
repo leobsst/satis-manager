@@ -1,0 +1,21 @@
+{
+    "added_at": "Hinzugefügt am",
+    "authentication": "Authentifizierung",
+    "back_to_home": "Zurück zur Startseite",
+    "cancelled_at": "Abgebrochen am",
+    "close": "Schließen",
+    "connection": "Verbindung",
+    "configuration": "Konfiguration",
+    "created_at": "Erstellt am",
+    "exception": "Ausnahme",
+    "failed_at": "Fehlgeschlagen am",
+    "finished_at": "Beendet am",
+    "grant_types": "Berechtigungstypen",
+    "name": "Name",
+    "options": "Option|Optionen",
+    "provider": "Anbieter",
+    "redirection": "Umleitung",
+    "revoked": "Widerrufen",
+    "updated_at": "Aktualisiert am",
+    "user": "Benutzer"
+}

@@ -1,0 +1,21 @@
+{
+    "added_at": "Aggiunto il",
+    "authentication": "Autenticazione",
+    "back_to_home": "Torna alla home",
+    "cancelled_at": "Annullato il",
+    "close": "Chiudi",
+    "connection": "Connessione",
+    "configuration": "Configurazione",
+    "created_at": "Creato il",
+    "exception": "Eccezione",
+    "failed_at": "Fallito il",
+    "finished_at": "Terminato il",
+    "grant_types": "Tipi di autorizzazione",
+    "name": "Nome",
+    "options": "Opzione|Opzioni",
+    "provider": "Fornitore",
+    "redirection": "Reindirizzamento",
+    "revoked": "Revocato",
+    "updated_at": "Aggiornato il",
+    "user": "Utente"
+}

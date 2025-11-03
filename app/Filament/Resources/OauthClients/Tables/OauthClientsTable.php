@@ -7,13 +7,13 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
-use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Http\RedirectResponse;
+use Laravel\Passport\Client;
 
 class OauthClientsTable
 {
@@ -53,14 +53,8 @@ class OauthClientsTable
                     ViewAction::make()
                         ->label(label: __('api_credentials.view.action.label'))
                         ->icon(icon: 'heroicon-o-lock-closed')
-                        ->mountUsing(callback: function (Schema $schema, $record) {
-                            $schema->fill(state: [
-                                'id' => $record->id,
-                                'grant_types' => $record->grant_types,
-                            ]);
-                        })
                         ->modalWidth(width: Width::Large)
-                        ->modalHeading(heading: __('authentication')),
+                        ->modalHeading(heading: fn (Client $record) => __('authentication') . ' - ' . $record->name),
                     DeleteAction::make(),
                 ])->button()->color(color: 'gray'),
             ])
