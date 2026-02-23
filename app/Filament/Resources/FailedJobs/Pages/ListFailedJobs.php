@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\FailedJobs\Pages;
 
 use App\Filament\Resources\FailedJobs\FailedJobResource;
