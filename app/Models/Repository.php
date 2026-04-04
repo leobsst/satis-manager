@@ -49,8 +49,7 @@ class Repository extends Model
     /**
      * Get the full git URL for this repository.
      *
-     * For CUSTOM provider, the domain is resolved from the associated credential first,
-     * then falls back to the global config value.
+     * For CUSTOM provider, the domain is resolved from the associated credential.
      *
      * @param  bool  $http  Whether to use HTTP(S) prefix instead of SSH
      */
@@ -58,10 +57,9 @@ class Repository extends Model
     {
         if ($this->provider === CodespaceProviderEnum::CUSTOM) {
             $domain = $this->credential?->domain;
-            $domain ??= (string) config('services.custom.domain');
 
             if (! $domain) {
-                throw new \RuntimeException('Custom provider requires a domain. Set it on the credential or via the CUSTOM_PROVIDER_DOMAIN environment variable.');
+                throw new \RuntimeException("Custom provider repository \"{$this->url}\" requires a credential with a domain.");
             }
 
             $prefix = $http ? "https://{$domain}/" : "git@{$domain}:";
@@ -72,7 +70,7 @@ class Repository extends Model
         $prefix = $this->provider->prefix($http);
 
         if (! $prefix) {
-            throw new \RuntimeException("Provider {$this->provider->value} does not have a configured prefix");
+            throw new \RuntimeException("Provider {$this->provider->value} does not have a configured prefix.");
         }
 
         return "{$prefix}{$this->url}.git";

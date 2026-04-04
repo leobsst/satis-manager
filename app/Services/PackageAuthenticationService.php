@@ -13,13 +13,11 @@ class PackageAuthenticationService
     /**
      * Get merged authentication for a build-all run.
      *
-     * Merges global provider credentials (from env) with all per-repo
-     * credentials stored in the database. Per-repo credentials take precedence
-     * over global ones for the same domain.
+     * Collects all unique credentials assigned to repositories and merges them.
      */
     public static function getAllAuthentications(): array
     {
-        $composed = self::buildGlobalComposed();
+        $composed = ['composer' => [], 'git' => []];
 
         $credentials = RepositoryCredential::all();
         foreach ($credentials as $credential) {
@@ -31,70 +29,24 @@ class PackageAuthenticationService
     }
 
     /**
-     * Get merged authentication for a single-repository build.
+     * Get authentication for a single-repository build.
      *
-     * Uses the repository's own credential (if set) merged on top of the
-     * global authentication. The per-repo credential takes precedence.
+     * Returns an empty array if the repository has no credential assigned.
      */
     public static function getAuthForRepository(Repository $repository): array
     {
-        $composed = self::buildGlobalComposed();
-
-        if ($repository->credential !== null) {
-            $credComposed = self::buildComposedFromCredential($repository->credential);
-            $composed = self::mergeComposed($composed, $credComposed);
+        if ($repository->credential === null) {
+            return [];
         }
 
-        return self::composedToEnv($composed);
-    }
+        $composed = self::buildComposedFromCredential($repository->credential);
 
-    /**
-     * @deprecated Use getAllAuthentications() or getAuthForRepository() instead.
-     */
-    public static function getAvailableAuthentications(): array
-    {
-        return self::getAllAuthentications();
+        return self::composedToEnv($composed);
     }
 
     // -------------------------------------------------------------------------
     // Internal: build composed auth structures
     // -------------------------------------------------------------------------
-
-    /**
-     * Build a composed auth structure from all global env-based credentials.
-     *
-     * @return array{composer: array, git: list<array{key: string, value: string}>}
-     */
-    private static function buildGlobalComposed(): array
-    {
-        $composed = ['composer' => [], 'git' => []];
-
-        foreach (CodespaceProviderEnum::cases() as $provider) {
-            $providerComposed = match ($provider) {
-                CodespaceProviderEnum::GITHUB => self::buildGithubComposed(
-                    config('services.github.token')
-                ),
-                CodespaceProviderEnum::GITLAB => self::buildGitlabComposed(
-                    config('services.gitlab.token')
-                ),
-                CodespaceProviderEnum::BITBUCKET => self::buildBitbucketComposed(
-                    config('services.bitbucket.key'),
-                    config('services.bitbucket.token')
-                ),
-                CodespaceProviderEnum::CUSTOM => self::buildCustomComposed(
-                    config('services.custom.token'),
-                    config('services.custom.domain'),
-                    config('services.custom.username')
-                ),
-            };
-
-            if ($providerComposed !== null) {
-                $composed = self::mergeComposed($composed, $providerComposed);
-            }
-        }
-
-        return $composed;
-    }
 
     /**
      * Build a composed auth structure from a RepositoryCredential model.
@@ -104,8 +56,8 @@ class PackageAuthenticationService
     private static function buildComposedFromCredential(RepositoryCredential $credential): array
     {
         $composed = match ($credential->provider) {
-            CodespaceProviderEnum::GITHUB => self::buildGithubComposed($credential->token),
-            CodespaceProviderEnum::GITLAB => self::buildGitlabComposed($credential->token),
+            CodespaceProviderEnum::GITHUB => self::buildGithubComposed($credential->token, $credential->username),
+            CodespaceProviderEnum::GITLAB => self::buildGitlabComposed($credential->token, $credential->username),
             CodespaceProviderEnum::BITBUCKET => self::buildBitbucketComposed($credential->username, $credential->token),
             CodespaceProviderEnum::CUSTOM => self::buildCustomComposed($credential->token, $credential->domain, $credential->username),
         };
@@ -118,12 +70,31 @@ class PackageAuthenticationService
     // -------------------------------------------------------------------------
 
     /**
+     * When a username is provided, uses HTTP basic auth (username + token).
+     * Without username, falls back to the standard github-oauth token auth.
+     *
      * @return array{composer: array, git: list<array{key: string, value: string}>}|null
      */
-    private static function buildGithubComposed(?string $token): ?array
+    private static function buildGithubComposed(?string $token, ?string $username = null): ?array
     {
         if (! $token) {
             return null;
+        }
+
+        if ($username) {
+            return [
+                'composer' => [
+                    'http-basic' => [
+                        'github.com' => ['username' => $username, 'password' => $token],
+                    ],
+                ],
+                'git' => [
+                    [
+                        'key' => "url.https://{$username}:{$token}@github.com/.insteadOf",
+                        'value' => 'git@github.com:',
+                    ],
+                ],
+            ];
         }
 
         return [
@@ -140,12 +111,31 @@ class PackageAuthenticationService
     }
 
     /**
+     * When a username is provided (e.g. a GitLab deploy token username), uses
+     * HTTP basic auth. Without username, falls back to the standard gitlab-token auth.
+     *
      * @return array{composer: array, git: list<array{key: string, value: string}>}|null
      */
-    private static function buildGitlabComposed(?string $token): ?array
+    private static function buildGitlabComposed(?string $token, ?string $username = null): ?array
     {
         if (! $token) {
             return null;
+        }
+
+        if ($username) {
+            return [
+                'composer' => [
+                    'http-basic' => [
+                        'gitlab.com' => ['username' => $username, 'password' => $token],
+                    ],
+                ],
+                'git' => [
+                    [
+                        'key' => "url.https://{$username}:{$token}@gitlab.com/.insteadOf",
+                        'value' => 'git@gitlab.com:',
+                    ],
+                ],
+            ];
         }
 
         return [

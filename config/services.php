@@ -35,23 +35,4 @@ return [
         ],
     ],
 
-    'github' => [
-        'token' => env('GITHUB_TOKEN'),
-    ],
-
-    'gitlab' => [
-        'token' => env('GITLAB_TOKEN'),
-    ],
-
-    'bitbucket' => [
-        'key' => env('BITBUCKET_KEY'),
-        'token' => env('BITBUCKET_TOKEN'),
-    ],
-
-    'custom' => [
-        'token' => env('CUSTOM_PROVIDER_TOKEN'),
-        'domain' => env('CUSTOM_PROVIDER_DOMAIN'),
-        'username' => env('CUSTOM_PROVIDER_USERNAME'),
-    ],
-
 ];

@@ -46,12 +46,6 @@ class RepositoryCredentialForm
                 ->label(fn (Get $get): string => $get('provider') === CodespaceProviderEnum::BITBUCKET->value
                     ? __('credentials.consumer_key')
                     : __('credentials.username'))
-                ->visible(fn (Get $get): bool => in_array(
-                    $get('provider'),
-                    [CodespaceProviderEnum::BITBUCKET->value, CodespaceProviderEnum::CUSTOM->value],
-                    true
-                ))
-                ->required(fn (Get $get): bool => $get('provider') === CodespaceProviderEnum::BITBUCKET->value)
                 ->password()
                 ->revealable()
                 ->maxLength(255),
