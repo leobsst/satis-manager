@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/leobsst/satis-manager"><img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/leobsst/satis-manager"><img src="https://img.shields.io/badge/version-1.2.1-blue.svg" alt="Version"></a>
   <a href="https://github.com/leobsst/satis-manager/actions?query=workflow%3Arun-tests+branch%3A1.x"><img src="https://img.shields.io/github/actions/workflow/status/leobsst/satis-manager/run-tests.yml?branch=1.x&label=tests&style=flat-square" alt="GitHub Tests Action Status"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-12.0-FF2D20?logo=laravel" alt="Laravel"></a>
@@ -41,6 +41,10 @@ Perfect for teams and organizations that need to:
 - Define **glob patterns** per repository (e.g. `dependabot/*`, `renovate/**`) to exclude branches from the satis build
 - Matched `dev-*` versions are automatically removed from the generated package metadata after each build
 - Prevents Dependabot and Renovate branches from polluting your package list
+
+### Build Management
+- **Clear all builds** — wipes all generated satis output in one click; useful after removing repositories or rotating credentials
+- **Clear repository build** — removes a single repository's package versions from the metadata without touching other repos
 
 ### Package Building & Automation
 - **Webhook integration** to trigger automatic builds on repository updates
@@ -217,7 +221,7 @@ Credentials allow you to configure per-repository authentication instead of rely
    - **Custom**: token, optional username, and domain
 5. Save — the token is stored encrypted and never displayed in logs
 
-> Credentials set on a repository override the global env variables for the same provider during the build. If no credential is assigned, the global config is used as fallback.
+> Each repository must have its own credential configured for private repository builds. Credentials are stored encrypted and never appear in logs.
 
 ### Setting Up Webhooks
 

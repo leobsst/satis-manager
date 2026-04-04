@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Username is now optional and available for **all providers** in the credential form — previously visible only for Bitbucket and Custom. Useful for GitHub Enterprise (LDAP) or GitLab deploy tokens that require a username alongside the token.
 - When a username is set on a GitHub or GitLab credential, the build uses `http-basic` Composer auth and a `username:token` git URL instead of the standard `github-oauth` / `gitlab-token` flow.
+- **Clear all builds** — header action in the Repositories table that deletes all generated satis output (`storage/app/satis/`) and resets the directory. Useful after removing repositories or credential changes.
+- **Clear repository build** — per-row action that removes all package versions attributed to a specific repository from the generated metadata, without affecting other repositories.
 
 ### Changed
 - **Breaking**: Global env-based credentials (`GITHUB_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_KEY`, `BITBUCKET_TOKEN`, `CUSTOM_PROVIDER_*`) are no longer supported. All authentication must be configured through per-repository credentials in the admin panel.
