@@ -34,10 +34,4 @@ return [
         'success_notification' => 'Tous les builds ont été effacés.',
     ],
 
-    'clear_repo_build' => [
-        'action' => 'Effacer le build',
-        'confirm_heading' => 'Effacer le build',
-        'success_notification' => 'Le build du dépôt a été effacé.',
-    ],
-
 ];

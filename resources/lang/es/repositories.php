@@ -34,10 +34,4 @@ return [
         'success_notification' => 'Todos los builds han sido borrados.',
     ],
 
-    'clear_repo_build' => [
-        'action' => 'Borrar build',
-        'confirm_heading' => 'Borrar build',
-        'success_notification' => 'El build del repositorio ha sido borrado.',
-    ],
-
 ];

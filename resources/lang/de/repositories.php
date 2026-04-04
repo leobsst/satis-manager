@@ -34,10 +34,4 @@ return [
         'success_notification' => 'Alle Build-Ausgaben wurden gelöscht.',
     ],
 
-    'clear_repo_build' => [
-        'action' => 'Build löschen',
-        'confirm_heading' => 'Build löschen',
-        'success_notification' => 'Die Build-Ausgabe des Repositories wurde gelöscht.',
-    ],
-
 ];

@@ -34,10 +34,4 @@ return [
         'success_notification' => 'All build output has been cleared.',
     ],
 
-    'clear_repo_build' => [
-        'action' => 'Clear build',
-        'confirm_heading' => 'Clear build',
-        'success_notification' => 'Repository build output has been cleared.',
-    ],
-
 ];

@@ -34,10 +34,4 @@ return [
         'success_notification' => 'Tutti i build sono stati cancellati.',
     ],
 
-    'clear_repo_build' => [
-        'action' => 'Cancella build',
-        'confirm_heading' => 'Cancella build',
-        'success_notification' => 'Il build del repository è stato cancellato.',
-    ],
-
 ];
