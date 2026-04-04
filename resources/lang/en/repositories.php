@@ -21,4 +21,10 @@ return [
         'title' => 'API Credentials',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Excluded branches',
+        'placeholder' => 'Add a pattern, e.g. dependabot/*',
+        'helper' => 'Glob patterns of branch names to exclude from the build. Matched branches will not appear as dev-* versions in the package list.',
+    ],
+
 ];

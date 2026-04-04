@@ -21,4 +21,10 @@ return [
         'title' => 'Identifiants API',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Branches exclues',
+        'placeholder' => 'Ajouter un pattern, ex. dependabot/*',
+        'helper' => 'Patterns glob de noms de branches à exclure du build. Les branches correspondantes n\'apparaîtront pas comme versions dev-* dans la liste des packages.',
+    ],
+
 ];

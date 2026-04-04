@@ -21,4 +21,10 @@ return [
         'title' => 'API-Anmeldedaten',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Ausgeschlossene Branches',
+        'placeholder' => 'Muster hinzufügen, z.B. dependabot/*',
+        'helper' => 'Glob-Muster für Branch-Namen, die vom Build ausgeschlossen werden sollen. Übereinstimmende Branches erscheinen nicht als dev-*-Versionen in der Paketliste.',
+    ],
+
 ];

@@ -51,6 +51,11 @@ class RepositoriesTable
                     })
                     ->url(fn (Repository $record): string => $record->getFullUrl(true), true)
                     ->badge(),
+                TextColumn::make('excluded_branches')
+                    ->label(__('repositories.excluded_branches.label'))
+                    ->badge()
+                    ->color('warning')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label(__('added_at'))
                     ->date('d/m/Y'),

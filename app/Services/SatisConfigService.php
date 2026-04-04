@@ -15,7 +15,8 @@ class SatisConfigService
      */
     public static function generateConfig(): string
     {
-        $repositories = Repository::all();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Repository> $repositories */
+        $repositories = Repository::with('credential')->get();
 
         $satisConfig = [
             'name' => config('app.vendor', 'leobsst') . '/packages',
@@ -72,9 +73,9 @@ class SatisConfigService
     }
 
     /**
-     * Post-process packages.json to remove dist URLs when archive is disabled
+     * Post-process packages.json to remove dist URLs when archive is disabled.
      * This forces Composer to use 'source' (git) instead of 'dist' (zip from GitHub)
-     * allowing HTTP basic authentication to work without requiring GitHub tokens
+     * allowing HTTP basic authentication to work without requiring GitHub tokens.
      */
     public static function postProcessPackages(): void
     {
@@ -131,7 +132,82 @@ class SatisConfigService
     }
 
     /**
-     * Remove dist entries from package data array
+     * Post-process satis output to remove excluded branch versions.
+     *
+     * For each repository with excluded_branches patterns, scans the satis output
+     * files and removes any dev versions (dev-{branch}) whose branch name matches
+     * a configured glob pattern (e.g. "dependabot/*").
+     *
+     * The match is done by extracting the repo path (vendor/name) from the package's
+     * source URL, which is provider-agnostic and works with SSH and HTTPS remotes.
+     */
+    public static function postProcessExcludedBranches(): void
+    {
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Repository> $repositories */
+        $repositories = Repository::with('credential')
+            ->whereNotNull('excluded_branches')
+            ->get()
+            ->filter(fn (Repository $r): bool => ! empty($r->excluded_branches));
+
+        if ($repositories->isEmpty()) {
+            return;
+        }
+
+        // Build a lookup: "vendor/repo_name" => [glob_pattern, ...]
+        // This is provider-agnostic because we compare against the repo path,
+        // not the full URL (so SSH and HTTPS remotes both match).
+        /** @var array<string, list<string>> $exclusionMap */
+        $exclusionMap = [];
+        foreach ($repositories as $repo) {
+            $exclusionMap[$repo->url] = $repo->excluded_branches ?? [];
+        }
+
+        $satisDir = storage_path('app/satis');
+        $removedCount = 0;
+
+        $processFile = function (string $path) use ($exclusionMap, &$removedCount): void {
+            $data = json_decode(File::get($path), true);
+            if (! $data || ! isset($data['packages'])) {
+                return;
+            }
+
+            $removed = self::removeExcludedBranchVersions($data['packages'], $exclusionMap);
+            if ($removed > 0) {
+                File::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                $removedCount += $removed;
+            }
+        };
+
+        // packages.json
+        $packagesPath = $satisDir . '/packages.json';
+        if (File::exists($packagesPath)) {
+            $processFile($packagesPath);
+        }
+
+        // include/all$*.json
+        foreach (File::glob($satisDir . '/include/all$*.json') as $file) {
+            $processFile($file);
+        }
+
+        // p2/**/*.json
+        $p2Dir = $satisDir . '/p2';
+        if (File::isDirectory($p2Dir)) {
+            foreach (File::allFiles($p2Dir) as $file) {
+                if ($file->getExtension() === 'json') {
+                    $processFile($file->getPathname());
+                }
+            }
+        }
+
+        Log::channel('satis')->info("Post-processing complete - removed {$removedCount} excluded branch versions from satis output");
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Remove dist entries from package data array.
      *
      * @return int Number of dist entries removed
      */
@@ -140,7 +216,7 @@ class SatisConfigService
         $count = 0;
 
         foreach ($packages as $packageName => &$versions) {
-            if (! is_array($versions)) {
+            if (! \is_array($versions)) {
                 continue;
             }
 
@@ -154,5 +230,83 @@ class SatisConfigService
         }
 
         return $count;
+    }
+
+    /**
+     * Remove versions whose branch name (extracted from the version string and source URL)
+     * matches one of the excluded glob patterns for the corresponding repository.
+     *
+     * @param  array<string, list<string>>  $exclusionMap  repo_path => [glob_patterns]
+     * @return int Number of versions removed
+     */
+    private static function removeExcludedBranchVersions(array &$packages, array $exclusionMap): int
+    {
+        $count = 0;
+
+        foreach ($packages as $packageName => &$versions) {
+            if (! \is_array($versions)) {
+                continue;
+            }
+
+            foreach (array_keys($versions) as $version) {
+                // Only dev (branch) versions are candidates
+                if (! \str_starts_with((string) $version, 'dev-')) {
+                    continue;
+                }
+
+                $packageData = $versions[$version];
+                $sourceUrl = $packageData['source']['url'] ?? null;
+
+                if (! $sourceUrl) {
+                    continue;
+                }
+
+                $repoPath = self::extractRepoPath($sourceUrl);
+                $patterns = $exclusionMap[$repoPath] ?? null;
+
+                if (empty($patterns)) {
+                    continue;
+                }
+
+                $branch = \substr((string) $version, 4); // strip "dev-" prefix
+
+                foreach ($patterns as $pattern) {
+                    if (\fnmatch($pattern, $branch)) {
+                        unset($versions[$version]);
+                        $count++;
+                        Log::channel('satis')->debug("Removed excluded branch version {$packageName}:{$version} (pattern: {$pattern})");
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Extract the "vendor/repo" path from a git remote URL.
+     *
+     * Handles both SSH and HTTPS formats:
+     *   - git@github.com:vendor/repo.git  → vendor/repo
+     *   - https://github.com/vendor/repo.git → vendor/repo
+     */
+    private static function extractRepoPath(string $url): string
+    {
+        $url = \rtrim($url, '/');
+        $url = \preg_replace('/\.git$/', '', $url) ?? $url;
+
+        if (\str_contains($url, ':') && ! \str_starts_with($url, 'http')) {
+            // SSH format: git@host:vendor/repo
+            [, $path] = \explode(':', $url, 2);
+
+            return \ltrim($path, '/');
+        }
+
+        // HTTPS format: https://host/vendor/repo
+        $parsed = \parse_url($url);
+
+        return \ltrim($parsed['path'] ?? '', '/');
     }
 }

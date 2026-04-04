@@ -21,4 +21,10 @@ return [
         'title' => 'Credenciales API',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Ramas excluidas',
+        'placeholder' => 'Añadir un patrón, p.ej. dependabot/*',
+        'helper' => 'Patrones glob de nombres de ramas a excluir del build. Las ramas coincidentes no aparecerán como versiones dev-* en la lista de paquetes.',
+    ],
+
 ];

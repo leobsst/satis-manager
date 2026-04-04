@@ -21,4 +21,10 @@ return [
         'title' => 'Credenziali API',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Branch esclusi',
+        'placeholder' => 'Aggiungi un pattern, es. dependabot/*',
+        'helper' => 'Pattern glob di nomi di branch da escludere dal build. I branch corrispondenti non appariranno come versioni dev-* nella lista dei pacchetti.',
+    ],
+
 ];
