@@ -43,9 +43,17 @@ class SatisConfigService
 
         // Build repositories array from database
         foreach ($repositories as $repository) {
+            try {
+                $fullUrl = $repository->getFullUrl();
+            } catch (\RuntimeException $e) {
+                Log::channel('satis')->warning("Skipping repository \"{$repository->url}\": {$e->getMessage()}");
+
+                continue;
+            }
+
             $satisConfig['repositories'][] = [
                 'type' => 'vcs',
-                'url' => $repository->getFullUrl(),
+                'url' => $fullUrl,
             ];
 
             // Add to require section (with wildcard for all versions)
