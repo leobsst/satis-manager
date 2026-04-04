@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-04-04
+
+### Added
+- Username is now optional and available for **all providers** in the credential form — previously visible only for Bitbucket and Custom. Useful for GitHub Enterprise (LDAP) or GitLab deploy tokens that require a username alongside the token.
+- When a username is set on a GitHub or GitLab credential, the build uses `http-basic` Composer auth and a `username:token` git URL instead of the standard `github-oauth` / `gitlab-token` flow.
+
+### Changed
+- **Breaking**: Global env-based credentials (`GITHUB_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_KEY`, `BITBUCKET_TOKEN`, `CUSTOM_PROVIDER_*`) are no longer supported. All authentication must be configured through per-repository credentials in the admin panel.
+- `config/services.php` — provider credential entries removed.
+- `.env.example` — provider token variables removed.
+- `CodespaceProviderEnum::CUSTOM::prefix()` now returns `null` — the domain is exclusively provided by the assigned credential, never from a global config.
+- `Repository::getFullUrl()` no longer falls back to `config('services.custom.domain')` for custom-provider repositories.
+
+> **Migration note**: users relying on global env tokens must create the corresponding credentials in the admin panel **before** updating, otherwise builds for private repositories will fail.
+
 ## [1.2.0] - 2026-04-04
 
 ### Added
@@ -85,7 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - i18n: English and French translations.
 - GitHub Actions CI: tests, PHPStan, code style.
 
-[Unreleased]: https://github.com/leobsst/satis-manager/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/leobsst/satis-manager/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/leobsst/satis-manager/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/leobsst/satis-manager/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/leobsst/satis-manager/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/leobsst/satis-manager/compare/v1.0.1...v1.0.2

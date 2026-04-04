@@ -129,15 +129,6 @@ DB_DATABASE=satis_manager
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
 
-# Git Provider Tokens (for private repositories)
-GITHUB_TOKEN=your_github_token
-GITLAB_TOKEN=your_gitlab_token
-BITBUCKET_KEY=your_bitbucket_key
-BITBUCKET_TOKEN=your_bitbucket_token
-CUSTOM_PROVIDER_TOKEN=your_custom_token
-CUSTOM_PROVIDER_DOMAIN=git.your-domain.com
-CUSTOM_PROVIDER_USERNAME=your_username
-
 # Mail Configuration
 MAIL_MAILER=smtp
 MAIL_HOST=your_smtp_host
@@ -449,20 +440,16 @@ storage/
 
 ### Authentication
 
-There are two ways to configure authentication for private repositories:
+All authentication is managed through the **Credentials** section of the admin panel. There are no global environment variables for Git provider tokens — each credential is stored encrypted in the database and assigned per repository.
 
-#### Option A — Global environment variables (`.env`)
+Create a named credential for each access token or deploy key you use, then assign it to the relevant repositories. The same credential can be reused across multiple repositories.
 
-Applies to all repositories of the given provider that have no specific credential assigned:
-
-- **GitHub**: Create a personal access token with `repo` scope → `GITHUB_TOKEN`
-- **GitLab**: Create a personal access token with `read_repository` scope → `GITLAB_TOKEN`
-- **Bitbucket**: Create an app password → `BITBUCKET_KEY` + `BITBUCKET_TOKEN`
-- **Custom**: Provide your Git server credentials → `CUSTOM_PROVIDER_TOKEN`, `CUSTOM_PROVIDER_DOMAIN`, `CUSTOM_PROVIDER_USERNAME`
-
-#### Option B — Per-repository credentials (admin panel)
-
-Use the **Credentials** section in the admin panel to create named, encrypted credentials and assign them per repository. Per-repo credentials take precedence over global env variables for the same provider/domain during the build.
+| Provider | Required fields | Optional |
+|----------|----------------|----------|
+| GitHub | Token | Username (for HTTP basic instead of oauth) |
+| GitLab | Token | Username (required for deploy tokens) |
+| Bitbucket | Consumer Key + Consumer Secret | — |
+| Custom | Token + Domain | Username |
 
 ## Security
 
