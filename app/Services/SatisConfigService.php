@@ -203,9 +203,107 @@ class SatisConfigService
         Log::channel('satis')->info("Post-processing complete - removed {$removedCount} excluded branch versions from satis output");
     }
 
+    /**
+     * Delete all generated satis output files.
+     *
+     * This forces a full rebuild on next build run. The output directory is
+     * recreated empty so the application can still serve an empty packages.json.
+     */
+    public static function clearAllBuilds(): void
+    {
+        $satisDir = storage_path('app/satis');
+
+        if (File::isDirectory($satisDir)) {
+            File::deleteDirectory($satisDir);
+        }
+
+        File::makeDirectory($satisDir, 0755, true);
+
+        Log::channel('satis')->info('All satis build output cleared.');
+    }
+
+    /**
+     * Remove all package entries attributed to a given repository from the
+     * satis output files.
+     *
+     * The attribution is done by matching the package version's source URL
+     * against the repository path (vendor/name), which is provider-agnostic
+     * and works with both SSH and HTTPS remotes.
+     */
+    public static function clearRepositoryPackages(Repository $repository): void
+    {
+        $satisDir = storage_path('app/satis');
+        $removedCount = 0;
+
+        $processFile = function (string $path) use ($repository, &$removedCount): void {
+            $data = json_decode(File::get($path), true);
+            if (! $data || ! isset($data['packages'])) {
+                return;
+            }
+
+            $removed = self::removeRepositoryFromPackages($data['packages'], $repository->url);
+            if ($removed > 0) {
+                File::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                $removedCount += $removed;
+            }
+        };
+
+        $packagesPath = $satisDir . '/packages.json';
+        if (File::exists($packagesPath)) {
+            $processFile($packagesPath);
+        }
+
+        foreach (File::glob($satisDir . '/include/all$*.json') as $file) {
+            $processFile($file);
+        }
+
+        $p2Dir = $satisDir . '/p2';
+        if (File::isDirectory($p2Dir)) {
+            foreach (File::allFiles($p2Dir) as $file) {
+                if ($file->getExtension() === 'json') {
+                    $processFile($file->getPathname());
+                }
+            }
+        }
+
+        Log::channel('satis')->info("Cleared {$removedCount} package versions for repository {$repository->url}.");
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Remove all versions of packages that originate from a given repository.
+     * Packages with no remaining versions are removed entirely.
+     *
+     * @return int Number of versions removed
+     */
+    private static function removeRepositoryFromPackages(array &$packages, string $repoPath): int
+    {
+        $count = 0;
+
+        foreach (array_keys($packages) as $packageName) {
+            if (! \is_array($packages[$packageName])) {
+                continue;
+            }
+
+            foreach (array_keys($packages[$packageName]) as $version) {
+                $sourceUrl = $packages[$packageName][$version]['source']['url'] ?? null;
+
+                if ($sourceUrl && self::extractRepoPath($sourceUrl) === $repoPath) {
+                    unset($packages[$packageName][$version]);
+                    $count++;
+                }
+            }
+
+            if (empty($packages[$packageName])) {
+                unset($packages[$packageName]);
+            }
+        }
+
+        return $count;
+    }
 
     /**
      * Remove dist entries from package data array.

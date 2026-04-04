@@ -8,6 +8,7 @@ use App\Enums\CodespaceProviderEnum;
 use App\Filament\Resources\OauthClients\Schemas\OauthClientForm;
 use App\Jobs\BuildPackages;
 use App\Models\Repository;
+use App\Services\SatisConfigService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -70,6 +71,16 @@ class RepositoriesTable
                     ->icon('icon-package')
                     ->color('gray')
                     ->disabled(fn () => $table->getRecords()->isEmpty()),
+                Action::make('clear_all_builds')
+                    ->label(__('repositories.clear_builds.title'))
+                    ->action(fn () => SatisConfigService::clearAllBuilds())
+                    ->requiresConfirmation()
+                    ->modalHeading(__('repositories.clear_builds.confirm_heading'))
+                    ->modalDescription(__('repositories.clear_builds.confirm_description'))
+                    ->modalSubmitActionLabel(__('repositories.clear_builds.title'))
+                    ->successNotificationTitle(__('repositories.clear_builds.success_notification'))
+                    ->icon(Heroicon::Trash)
+                    ->color('danger'),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -80,6 +91,15 @@ class RepositoriesTable
                         ->action(fn (Repository $record) => BuildPackages::dispatch(repository: $record))
                         ->successNotificationTitle(__('repositories.rebuild.success_notification'))
                         ->icon('icon-package'),
+                    Action::make('clear_repository_build')
+                        ->label(__('repositories.clear_repo_build.action'))
+                        ->action(fn (Repository $record) => SatisConfigService::clearRepositoryPackages($record))
+                        ->requiresConfirmation()
+                        ->modalHeading(fn (Repository $record) => __('repositories.clear_repo_build.confirm_heading') . ' — ' . $record->url)
+                        ->modalSubmitActionLabel(__('repositories.clear_repo_build.action'))
+                        ->successNotificationTitle(__('repositories.clear_repo_build.success_notification'))
+                        ->icon(Heroicon::Trash)
+                        ->color('danger'),
                     Action::make('generate_client_credentials')
                         ->label(__('repositories.api_credentials.title'))
                         ->modalHeading(fn (Repository $record) => __('authentication') . ' - ' . $record->url)
