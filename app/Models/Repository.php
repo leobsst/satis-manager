@@ -57,7 +57,8 @@ class Repository extends Model
     public function getFullUrl(bool $http = false): string
     {
         if ($this->provider === CodespaceProviderEnum::CUSTOM) {
-            $domain = $this->credential?->domain ?? config('services.custom.domain');
+            $domain = $this->credential?->domain;
+            $domain ??= config('services.custom.domain');
 
             if (! $domain) {
                 throw new \RuntimeException('Custom provider requires a domain. Set it on the credential or via the CUSTOM_PROVIDER_DOMAIN environment variable.');
