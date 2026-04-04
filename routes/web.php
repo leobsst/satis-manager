@@ -9,9 +9,8 @@ Route::get('/', [App\Http\Controllers\SatisController::class, 'show'])
     ->name('home')
     ->middleware(EnsurePackagesAreBuilt::class);
 
-Route::get('/login', function () {
-    return redirect()->to(Filament::getLoginUrl());
-})->name('login');
+Route::get('/login', fn () => redirect()->to(Filament::getLoginUrl()))
+    ->name('login');
 
 Route::get('/{path}', [App\Http\Controllers\SatisController::class, 'packages'])
     ->where('path', '.*\.(json|tar)$')
