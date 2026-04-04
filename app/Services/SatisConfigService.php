@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Repository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +16,7 @@ class SatisConfigService
      */
     public static function generateConfig(): string
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Repository> $repositories */
+        /** @var Collection<int, Repository> $repositories */
         $repositories = Repository::with('credential')->get();
 
         $satisConfig = [
@@ -143,7 +144,7 @@ class SatisConfigService
      */
     public static function postProcessExcludedBranches(): void
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Repository> $repositories */
+        /** @var Collection<int, Repository> $repositories */
         $repositories = Repository::with('credential')
             ->whereNotNull('excluded_branches')
             ->get()
