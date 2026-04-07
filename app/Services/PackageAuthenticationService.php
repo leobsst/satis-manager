@@ -5,145 +5,252 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\CodespaceProviderEnum;
-use Illuminate\Support\Str;
+use App\Models\Repository;
+use App\Models\RepositoryCredential;
 
 class PackageAuthenticationService
 {
-    public static function getAvailableAuthentications(): array
+    /**
+     * Get merged authentication for a build-all run.
+     *
+     * Collects all unique credentials assigned to repositories and merges them.
+     */
+    public static function getAllAuthentications(): array
     {
-        $composerAuth = [];
-        $gitConfigs = [];
+        $composed = ['composer' => [], 'git' => []];
 
-        foreach (CodespaceProviderEnum::cases() as $provider) {
-            $method = Str::camel("get{$provider->value}Authentication");
-
-            if ($providerAuth = self::$method()) {
-                // Merge Composer authentication configurations
-                if (isset($providerAuth['composer'])) {
-                    $composerAuth = array_merge_recursive($composerAuth, $providerAuth['composer']);
-                }
-
-                // Collect Git configurations
-                if (isset($providerAuth['git'])) {
-                    $gitConfigs = array_merge($gitConfigs, $providerAuth['git']);
-                }
-            }
+        $credentials = RepositoryCredential::all();
+        foreach ($credentials as $credential) {
+            $credComposed = self::buildComposedFromCredential($credential);
+            $composed = self::mergeComposed($composed, $credComposed);
         }
 
-        $env = [];
-
-        // Set COMPOSER_AUTH with all merged authentications
-        if (! empty($composerAuth)) {
-            $env['COMPOSER_AUTH'] = json_encode($composerAuth);
-        }
-
-        // Set Git configurations
-        if (! empty($gitConfigs)) {
-            $env['GIT_CONFIG_COUNT'] = (string) count($gitConfigs);
-            foreach ($gitConfigs as $index => $config) {
-                $env["GIT_CONFIG_KEY_{$index}"] = $config['key'];
-                $env["GIT_CONFIG_VALUE_{$index}"] = $config['value'];
-            }
-        }
-
-        return $env;
+        return self::composedToEnv($composed);
     }
 
-    public static function getGithubAuthentication(): ?array
+    /**
+     * Get authentication for a single-repository build.
+     *
+     * Returns an empty array if the repository has no credential assigned.
+     */
+    public static function getAuthForRepository(Repository $repository): array
     {
-        if ($githubToken = config('services.github.token')) {
+        if ($repository->credential === null) {
+            return [];
+        }
+
+        $composed = self::buildComposedFromCredential($repository->credential);
+
+        return self::composedToEnv($composed);
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal: build composed auth structures
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build a composed auth structure from a RepositoryCredential model.
+     *
+     * @return array{composer: array, git: list<array{key: string, value: string}>}
+     */
+    private static function buildComposedFromCredential(RepositoryCredential $credential): array
+    {
+        $composed = match ($credential->provider) {
+            CodespaceProviderEnum::GITHUB => self::buildGithubComposed($credential->token, $credential->username),
+            CodespaceProviderEnum::GITLAB => self::buildGitlabComposed($credential->token, $credential->username),
+            CodespaceProviderEnum::BITBUCKET => self::buildBitbucketComposed($credential->username, $credential->token),
+            CodespaceProviderEnum::CUSTOM => self::buildCustomComposed($credential->token, $credential->domain, $credential->username),
+        };
+
+        return $composed ?? ['composer' => [], 'git' => []];
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal: per-provider composed builders
+    // -------------------------------------------------------------------------
+
+    /**
+     * When a username is provided, uses HTTP basic auth (username + token).
+     * Without username, falls back to the standard github-oauth token auth.
+     *
+     * @return array{composer: array, git: list<array{key: string, value: string}>}|null
+     */
+    private static function buildGithubComposed(?string $token, ?string $username = null): ?array
+    {
+        if (! $token) {
+            return null;
+        }
+
+        if ($username) {
             return [
                 'composer' => [
-                    'github-oauth' => [
-                        'github.com' => $githubToken,
+                    'http-basic' => [
+                        'github.com' => ['username' => $username, 'password' => $token],
                     ],
                 ],
                 'git' => [
                     [
-                        'key' => "url.https://x-access-token:{$githubToken}@github.com/.insteadOf",
+                        'key' => "url.https://{$username}:{$token}@github.com/.insteadOf",
                         'value' => 'git@github.com:',
                     ],
                 ],
             ];
         }
 
-        return null;
+        return [
+            'composer' => [
+                'github-oauth' => ['github.com' => $token],
+            ],
+            'git' => [
+                [
+                    'key' => "url.https://x-access-token:{$token}@github.com/.insteadOf",
+                    'value' => 'git@github.com:',
+                ],
+            ],
+        ];
     }
 
-    public static function getGitlabAuthentication(): ?array
+    /**
+     * When a username is provided (e.g. a GitLab deploy token username), uses
+     * HTTP basic auth. Without username, falls back to the standard gitlab-token auth.
+     *
+     * @return array{composer: array, git: list<array{key: string, value: string}>}|null
+     */
+    private static function buildGitlabComposed(?string $token, ?string $username = null): ?array
     {
-        if ($gitlabToken = config('services.gitlab.token')) {
+        if (! $token) {
+            return null;
+        }
+
+        if ($username) {
             return [
                 'composer' => [
-                    'gitlab-token' => [
-                        'gitlab.com' => $gitlabToken,
+                    'http-basic' => [
+                        'gitlab.com' => ['username' => $username, 'password' => $token],
                     ],
                 ],
                 'git' => [
                     [
-                        'key' => "url.https://oauth2:{$gitlabToken}@gitlab.com/.insteadOf",
+                        'key' => "url.https://{$username}:{$token}@gitlab.com/.insteadOf",
                         'value' => 'git@gitlab.com:',
                     ],
                 ],
             ];
         }
 
-        return null;
+        return [
+            'composer' => [
+                'gitlab-token' => ['gitlab.com' => $token],
+            ],
+            'git' => [
+                [
+                    'key' => "url.https://oauth2:{$token}@gitlab.com/.insteadOf",
+                    'value' => 'git@gitlab.com:',
+                ],
+            ],
+        ];
     }
 
-    public static function getBitbucketAuthentication(): ?array
+    /**
+     * @return array{composer: array, git: list<array{key: string, value: string}>}|null
+     */
+    private static function buildBitbucketComposed(?string $consumerKey, ?string $consumerSecret): ?array
     {
-        if ($bitbucketToken = config('services.bitbucket.token')) {
-            return [
-                'composer' => [
-                    'bitbucket-oauth' => [
-                        'bitbucket.org' => [
-                            'consumer-key' => config('services.bitbucket.key', ''),
-                            'consumer-secret' => $bitbucketToken,
-                        ],
-                    ],
-                ],
-                'git' => [
-                    [
-                        'key' => "url.https://x-token-auth:{$bitbucketToken}@bitbucket.org/.insteadOf",
-                        'value' => 'git@bitbucket.org:',
-                    ],
-                ],
-            ];
+        if (! $consumerSecret) {
+            return null;
         }
 
-        return null;
+        return [
+            'composer' => [
+                'bitbucket-oauth' => [
+                    'bitbucket.org' => [
+                        'consumer-key' => $consumerKey ?? '',
+                        'consumer-secret' => $consumerSecret,
+                    ],
+                ],
+            ],
+            'git' => [
+                [
+                    'key' => "url.https://x-token-auth:{$consumerSecret}@bitbucket.org/.insteadOf",
+                    'value' => 'git@bitbucket.org:',
+                ],
+            ],
+        ];
     }
 
-    public static function getCustomAuthentication(): ?array
+    /**
+     * @return array{composer: array, git: list<array{key: string, value: string}>}|null
+     */
+    private static function buildCustomComposed(?string $token, ?string $domain, ?string $username): ?array
     {
-        $customToken = config('services.custom.token');
-        $customDomain = config('services.custom.domain');
-        $customUsername = config('services.custom.username');
-
-        if ($customToken && $customDomain) {
-            $gitUrl = $customUsername
-                ? "https://{$customUsername}:{$customToken}@{$customDomain}/"
-                : "https://x-token-auth:{$customToken}@{$customDomain}/";
-
-            return [
-                'composer' => [
-                    'http-basic' => [
-                        $customDomain => [
-                            'username' => $customUsername ?: 'token',
-                            'password' => $customToken,
-                        ],
-                    ],
-                ],
-                'git' => [
-                    [
-                        'key' => "url.{$gitUrl}.insteadOf",
-                        'value' => "git@{$customDomain}:",
-                    ],
-                ],
-            ];
+        if (! $token || ! $domain) {
+            return null;
         }
 
-        return null;
+        $gitUrl = $username
+            ? "https://{$username}:{$token}@{$domain}/"
+            : "https://x-token-auth:{$token}@{$domain}/";
+
+        return [
+            'composer' => [
+                'http-basic' => [
+                    $domain => [
+                        'username' => $username ?: 'token',
+                        'password' => $token,
+                    ],
+                ],
+            ],
+            'git' => [
+                [
+                    'key' => "url.{$gitUrl}.insteadOf",
+                    'value' => "git@{$domain}:",
+                ],
+            ],
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal: merge + serialize
+    // -------------------------------------------------------------------------
+
+    /**
+     * Merge two composed auth structures. The second takes precedence for the
+     * same domain keys (git entries are appended, not deduplicated).
+     *
+     * @param  array{composer: array, git: list<array{key: string, value: string}>}  $base
+     * @param  array{composer: array, git: list<array{key: string, value: string}>}  $override
+     * @return array{composer: array, git: list<array{key: string, value: string}>}
+     */
+    private static function mergeComposed(array $base, array $override): array
+    {
+        return [
+            'composer' => array_merge_recursive($base['composer'], $override['composer']),
+            'git' => array_merge($base['git'], $override['git']),
+        ];
+    }
+
+    /**
+     * Convert a composed auth structure to process environment variables.
+     *
+     * @param  array{composer: array, git: list<array{key: string, value: string}>}  $composed
+     * @return array<string, string>
+     */
+    private static function composedToEnv(array $composed): array
+    {
+        $env = [];
+
+        if (! empty($composed['composer'])) {
+            $env['COMPOSER_AUTH'] = json_encode($composed['composer']);
+        }
+
+        if (! empty($composed['git'])) {
+            $env['GIT_CONFIG_COUNT'] = (string) \count($composed['git']);
+            foreach ($composed['git'] as $index => $config) {
+                $env["GIT_CONFIG_KEY_{$index}"] = $config['key'];
+                $env["GIT_CONFIG_VALUE_{$index}"] = $config['value'];
+            }
+        }
+
+        return $env;
     }
 }

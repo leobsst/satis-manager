@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Webhooks\PackagesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,5 +15,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('/packages')->name('packages.')->group(callback: function (): void {
-    Route::post('/build', [App\Http\Controllers\Webhooks\PackagesController::class, 'build'])->name('build');
+    Route::post('/build', [PackagesController::class, 'build'])->name('build');
 });

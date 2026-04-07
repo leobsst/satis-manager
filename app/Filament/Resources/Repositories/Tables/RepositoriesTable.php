@@ -8,6 +8,7 @@ use App\Enums\CodespaceProviderEnum;
 use App\Filament\Resources\OauthClients\Schemas\OauthClientForm;
 use App\Jobs\BuildPackages;
 use App\Models\Repository;
+use App\Services\SatisConfigService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -51,6 +52,11 @@ class RepositoriesTable
                     })
                     ->url(fn (Repository $record): string => $record->getFullUrl(true), true)
                     ->badge(),
+                TextColumn::make('excluded_branches')
+                    ->label(__('repositories.excluded_branches.label'))
+                    ->badge()
+                    ->color('warning')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label(__('added_at'))
                     ->date('d/m/Y'),
@@ -65,6 +71,16 @@ class RepositoriesTable
                     ->icon('icon-package')
                     ->color('gray')
                     ->disabled(fn () => $table->getRecords()->isEmpty()),
+                Action::make('clear_all_builds')
+                    ->label(__('repositories.clear_builds.title'))
+                    ->action(fn () => SatisConfigService::clearAllBuilds())
+                    ->requiresConfirmation()
+                    ->modalHeading(__('repositories.clear_builds.confirm_heading'))
+                    ->modalDescription(__('repositories.clear_builds.confirm_description'))
+                    ->modalSubmitActionLabel(__('repositories.clear_builds.title'))
+                    ->successNotificationTitle(__('repositories.clear_builds.success_notification'))
+                    ->icon(Heroicon::Trash)
+                    ->color('danger'),
             ])
             ->recordActions([
                 ActionGroup::make([

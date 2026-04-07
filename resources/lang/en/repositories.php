@@ -21,4 +21,17 @@ return [
         'title' => 'API Credentials',
     ],
 
+    'excluded_branches' => [
+        'label' => 'Excluded branches',
+        'placeholder' => 'Add a pattern, e.g. dependabot/*',
+        'helper' => 'Glob patterns of branch names to exclude from the build. Matched branches will not appear as dev-* versions in the package list.',
+    ],
+
+    'clear_builds' => [
+        'title' => 'Clear all builds',
+        'confirm_heading' => 'Clear all builds?',
+        'confirm_description' => 'This will delete all generated package metadata. A full rebuild will be required before packages are available again.',
+        'success_notification' => 'All build output has been cleared.',
+    ],
+
 ];

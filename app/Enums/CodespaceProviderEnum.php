@@ -38,14 +38,11 @@ enum CodespaceProviderEnum: string
      */
     public function prefix(bool $http = false): ?string
     {
-        $customDomain = config('services.custom.domain');
-        $customPrefix = $customDomain ? ($http ? "https://{$customDomain}/" : "git@{$customDomain}:") : null;
-
         return match ($this) {
             self::GITHUB => $http ? 'https://github.com/' : 'git@github.com:',
             self::GITLAB => $http ? 'https://gitlab.com/' : 'git@gitlab.com:',
             self::BITBUCKET => $http ? 'https://bitbucket.org/' : 'git@bitbucket.org:',
-            default => $customPrefix
+            self::CUSTOM => null, // Domain is defined per-credential, not globally
         };
     }
 }

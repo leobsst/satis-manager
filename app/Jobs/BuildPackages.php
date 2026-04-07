@@ -25,17 +25,10 @@ class BuildPackages implements ShouldQueue
 
     public $timeout = 400;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(private ?Repository $repository = null) {}
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        // Generate satis.json from database before building
         SatisConfigService::generateConfig();
 
         $processParams = [
@@ -45,7 +38,6 @@ class BuildPackages implements ShouldQueue
             base_path('satis.json'),
         ];
 
-        // If building for a specific repository, add the repository URL filter
         if ($this->repository) {
             $processParams[] = "--repository-url={$this->repository->getFullUrl()}";
         }
@@ -53,8 +45,10 @@ class BuildPackages implements ShouldQueue
         $process = new Process($processParams, base_path());
         $process->setTimeout(300);
 
-        // Configure authentication for private repos (temporary, only for this process)
-        $auth = PackageAuthenticationService::getAvailableAuthentications();
+        $auth = $this->repository !== null
+            ? PackageAuthenticationService::getAuthForRepository($this->repository)
+            : PackageAuthenticationService::getAllAuthentications();
+
         if (! empty($auth)) {
             $process->setEnv($auth);
         }
@@ -66,17 +60,15 @@ class BuildPackages implements ShouldQueue
             $process->getOutput() . $process->getErrorOutput()
         );
 
-        Log::channel('satis')
-            ->info('Satis build process output: ', [
-                'success' => $process->isSuccessful(),
-                'repository_id' => $this->repository?->id,
-                'output' => $process->getOutput() ?: $process->getErrorOutput(),
-            ]);
+        Log::channel('satis')->info('Satis build process output: ', [
+            'success' => $process->isSuccessful(),
+            'repository_id' => $this->repository?->id,
+            'output' => $process->getOutput() ?: $process->getErrorOutput(),
+        ]);
 
-        // Post-process packages.json to remove dist URLs if archive is disabled
-        // This allows HTTP basic auth to work without requiring GitHub tokens
         if ($process->isSuccessful()) {
             SatisConfigService::postProcessPackages();
+            SatisConfigService::postProcessExcludedBranches();
         }
     }
 }

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/leobsst/satis-manager"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/leobsst/satis-manager"><img src="https://img.shields.io/badge/version-1.2.1-blue.svg" alt="Version"></a>
   <a href="https://github.com/leobsst/satis-manager/actions?query=workflow%3Arun-tests+branch%3A1.x"><img src="https://img.shields.io/github/actions/workflow/status/leobsst/satis-manager/run-tests.yml?branch=1.x&label=tests&style=flat-square" alt="GitHub Tests Action Status"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-12.0-FF2D20?logo=laravel" alt="Laravel"></a>
@@ -31,6 +31,21 @@ Perfect for teams and organizations that need to:
 - Automatic URL construction based on provider configuration
 - Intuitive Filament admin interface
 
+### Per-Repository Credentials
+- Store named credentials (token, username, domain) **per repository**, encrypted at rest
+- Each repository can use its own credential or fall back to the global env-based config
+- Credentials can be created and edited **inline** from the repository form
+- Support for GitHub tokens, GitLab tokens, Bitbucket OAuth consumer keys, and custom HTTP basic auth
+
+### Excluded Branch Patterns
+- Define **glob patterns** per repository (e.g. `dependabot/*`, `renovate/**`) to exclude branches from the satis build
+- Matched `dev-*` versions are automatically removed from the generated package metadata after each build
+- Prevents Dependabot and Renovate branches from polluting your package list
+
+### Build Management
+- **Clear all builds** — wipes all generated satis output in one click; useful after removing repositories or rotating credentials
+- **Clear repository build** — removes a single repository's package versions from the metadata without touching other repos
+
 ### Package Building & Automation
 - **Webhook integration** to trigger automatic builds on repository updates
 - Background job processing for non-blocking package builds
@@ -43,6 +58,7 @@ Perfect for teams and organizations that need to:
 - **OAuth2/Passport API** authentication for third-party integrations
 - **Basic authentication** for Composer package downloads
 - Email verification for user accounts
+- Credentials encrypted at rest via `APP_KEY` (AES-256-CBC)
 
 ### Composer Repository
 - Generates Composer-compatible package metadata
@@ -52,6 +68,7 @@ Perfect for teams and organizations that need to:
 
 ### Admin Panel Features
 - User management with role assignment
+- Credential management with encrypted storage
 - OAuth client management for API access
 - Job monitoring and failed job tracking
 - Repository configuration interface
@@ -115,15 +132,6 @@ DB_PORT=3306
 DB_DATABASE=satis_manager
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
-
-# Git Provider Tokens (for private repositories)
-GITHUB_TOKEN=your_github_token
-GITLAB_TOKEN=your_gitlab_token
-BITBUCKET_KEY=your_bitbucket_key
-BITBUCKET_TOKEN=your_bitbucket_token
-CUSTOM_PROVIDER_TOKEN=your_custom_token
-CUSTOM_PROVIDER_DOMAIN=git.your-domain.com
-CUSTOM_PROVIDER_USERNAME=your_username
 
 # Mail Configuration
 MAIL_MAILER=smtp
@@ -194,9 +202,26 @@ Navigate to `https://your-domain.com/admin/login` and log in with your admin cre
 3. Enter the vendor name (e.g., `yourcompany`)
 4. Enter the repository name (e.g., `my-package`)
 5. Select the Git provider (GitHub, GitLab, Bitbucket, or Custom)
-6. Click **Create**
+6. Optionally assign a **credential** — select an existing one or create a new one inline
+7. Optionally add **excluded branch patterns** (e.g. `dependabot/*`) to keep your package list clean
+8. Click **Create**
 
 The system will automatically construct the full Git URL based on the provider.
+
+### Managing Credentials
+
+Credentials allow you to configure per-repository authentication instead of relying solely on global environment variables.
+
+1. Go to **Credentials** in the admin panel
+2. Click **New Credential**
+3. Give it a recognisable name (e.g. `My Org GitHub Token`)
+4. Select the provider and fill in the required fields:
+   - **GitHub / GitLab**: token only
+   - **Bitbucket**: consumer key + consumer secret
+   - **Custom**: token, optional username, and domain
+5. Save — the token is stored encrypted and never displayed in logs
+
+> Each repository must have its own credential configured for private repository builds. Credentials are stored encrypted and never appear in logs.
 
 ### Setting Up Webhooks
 
@@ -417,14 +442,18 @@ storage/
 
 ## Configuration
 
-### Git Provider Tokens
+### Authentication
 
-Configure access tokens for private repositories in `.env`:
+All authentication is managed through the **Credentials** section of the admin panel. There are no global environment variables for Git provider tokens — each credential is stored encrypted in the database and assigned per repository.
 
-- **GitHub**: Create a personal access token with `repo` scope
-- **GitLab**: Create a personal access token with `read_repository` scope
-- **Bitbucket**: Create an app password with repository read access
-- **Custom**: Provide your Git server credentials
+Create a named credential for each access token or deploy key you use, then assign it to the relevant repositories. The same credential can be reused across multiple repositories.
+
+| Provider | Required fields | Optional |
+|----------|----------------|----------|
+| GitHub | Token | Username (for HTTP basic instead of oauth) |
+| GitLab | Token | Username (required for deploy tokens) |
+| Bitbucket | Consumer Key + Consumer Secret | — |
+| Custom | Token + Domain | Username |
 
 ## Security
 
