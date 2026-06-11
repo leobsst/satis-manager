@@ -9,7 +9,7 @@
         "althinect/filament-spatie-roles-permissions": "^3.0",
         "composer/satis": "^3.0",
         "filament/filament": "^4.0",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^12.62",
         "laravel/passport": "^13.0",
         "laravel/tinker": "^2.10.1",
         "leobsst/filament-log-manager": "^1.0",
